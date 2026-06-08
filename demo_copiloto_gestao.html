@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Co-Piloto de Gestão — Demo</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #eef2f7; color: #1a202c; font-size: 14px; }
+
+/* HEADER */
+.header {
+  background: linear-gradient(135deg, #0d1b6e 0%, #1a237e 60%, #283593 100%);
+  color: white; padding: 18px 40px;
+  display: flex; align-items: center; justify-content: space-between;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+}
+.header-left h1 { font-size: 1.25rem; font-weight: 700; letter-spacing: -0.02em; }
+.header-left p { font-size: 0.8rem; opacity: 0.65; margin-top: 3px; }
+.demo-badge {
+  background: #ff6f00; color: white;
+  padding: 5px 14px; border-radius: 20px;
+  font-size: 0.7rem; font-weight: 800; letter-spacing: 0.1em;
+}
+
+/* TABS */
+.tabs {
+  background: white; border-bottom: 2px solid #e2e8f0;
+  padding: 0 40px; display: flex; gap: 0;
+  overflow-x: auto; -webkit-overflow-scrolling: touch;
+}
+.tab {
+  padding: 13px 18px; cursor: pointer;
+  font-size: 0.85rem; color: #64748b;
+  border-bottom: 3px solid transparent; margin-bottom: -2px;
+  white-space: nowrap; transition: color 0.15s;
+  user-select: none;
+}
+.tab:hover { color: #1a237e; }
+.tab.active { color: #1a237e; border-bottom-color: #1a237e; font-weight: 700; }
+
+/* CONTENT AREA */
+.content { padding: 28px 40px; max-width: 1100px; margin: 0 auto; }
+
+/* DEMO BANNER */
+.demo-note {
+  background: #fff8e1; border: 1px solid #ffe082;
+  border-radius: 8px; padding: 10px 16px;
+  font-size: 0.78rem; color: #8d6e00; margin-bottom: 22px;
+}
+
+/* CHAT BUBBLE */
+.chat-bubble {
+  background: white; border-radius: 12px; padding: 16px 20px;
+  margin-bottom: 20px; border: 1px solid #e2e8f0;
+  display: flex; align-items: flex-start; gap: 12px;
+}
+.chat-avatar {
+  background: #1a237e; color: white; width: 34px; height: 34px;
+  border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  font-size: 0.8rem; font-weight: 700; flex-shrink: 0; margin-top: 2px;
+}
+.chat-msg { font-size: 0.875rem; color: #374151; line-height: 1.5; }
+.chat-msg strong { color: #1a237e; }
+
+/* CARD */
+.card {
+  background: white; border-radius: 12px;
+  padding: 22px 26px; margin-bottom: 18px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+}
+.card-title {
+  font-size: 1rem; font-weight: 700; color: #1a237e;
+  margin-bottom: 4px;
+}
+.card-sub {
+  font-size: 0.75rem; color: #94a3b8; margin-bottom: 16px;
+}
+.section-title {
+  font-size: 0.85rem; font-weight: 700; color: #374151;
+  margin: 18px 0 10px; padding-top: 14px;
+  border-top: 1px solid #f1f5f9;
+}
+.section-title:first-of-type { border-top: none; margin-top: 4px; }
+
+/* SUMMARY BOX */
+.summary-box {
+  background: #f0f4ff; border-left: 4px solid #1a237e;
+  border-radius: 0 8px 8px 0; padding: 13px 16px;
+  font-size: 0.875rem; line-height: 1.7; color: #374151;
+  margin-bottom: 18px;
+}
+
+/* METRICS GRID */
+.metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 18px; }
+.metric {
+  background: #f8fafc; border-radius: 10px;
+  padding: 14px 16px; border: 1px solid #e9eef5;
+}
+.metric-label { font-size: 0.7rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 7px; }
+.metric-value { font-size: 1.5rem; font-weight: 800; color: #1a237e; line-height: 1; }
+.metric-change { font-size: 0.75rem; margin-top: 5px; font-weight: 600; }
+.up { color: #16a34a; } .down { color: #dc2626; } .warn { color: #d97706; }
+
+/* TABLE */
+table { width: 100%; border-collapse: collapse; }
+th {
+  background: #f8fafc; padding: 9px 12px; text-align: left;
+  font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em;
+  color: #94a3b8; border-bottom: 1px solid #e2e8f0;
+}
+td { padding: 9px 12px; border-bottom: 1px solid #f1f5f9; color: #374151; }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: #fafbfc; }
+.table-wrap { border-radius: 8px; overflow: hidden; border: 1px solid #e9eef5; }
+
+/* BADGES */
+.badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 9px; border-radius: 20px;
+  font-size: 0.7rem; font-weight: 700;
+}
+.badge-green { background: #dcfce7; color: #15803d; }
+.badge-yellow { background: #fef9c3; color: #a16207; }
+.badge-red { background: #fee2e2; color: #b91c1c; }
+.badge-blue { background: #dbeafe; color: #1e40af; }
+
+/* SEMAFORO */
+.semaforo {
+  display: flex; align-items: flex-start; gap: 14px;
+  padding: 16px 20px; border-radius: 10px; margin: 14px 0;
+}
+.semaforo-icon { font-size: 2rem; line-height: 1; flex-shrink: 0; }
+.semaforo-verde { background: #dcfce7; border-left: 5px solid #16a34a; }
+.semaforo-amarelo { background: #fef9c3; border-left: 5px solid #d97706; }
+.semaforo-vermelho { background: #fee2e2; border-left: 5px solid #dc2626; }
+.semaforo h3 { font-size: 0.95rem; font-weight: 800; margin-bottom: 4px; }
+.semaforo p { font-size: 0.83rem; color: #4b5563; line-height: 1.5; }
+
+/* CHART CONTAINERS */
+.chart-wrap { position: relative; height: 260px; }
+.chart-wrap-sm { position: relative; height: 190px; }
+
+/* GRID */
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media(max-width: 740px) { .grid2 { grid-template-columns: 1fr; } .content { padding: 20px 18px; } .tabs { padding: 0 18px; } }
+
+/* ACTION ITEMS */
+.action {
+  padding: 13px 16px; border-left: 4px solid #1a237e;
+  background: #f5f7ff; border-radius: 0 8px 8px 0;
+  margin-bottom: 10px;
+}
+.action-num { font-size: 0.7rem; font-weight: 800; color: #94a3b8; letter-spacing: 0.08em; margin-bottom: 4px; }
+.action-title { font-weight: 700; color: #1a202c; margin-bottom: 5px; }
+.action-desc { font-size: 0.83rem; color: #4b5563; line-height: 1.55; }
+.urgency {
+  display: inline-block; margin-top: 8px;
+  padding: 2px 9px; border-radius: 10px;
+  font-size: 0.7rem; font-weight: 800;
+}
+.urgencia-urgente { background: #fee2e2; color: #b91c1c; }
+.urgencia-alta { background: #fef9c3; color: #a16207; }
+.urgencia-media { background: #dcfce7; color: #15803d; }
+
+/* PROMO CARDS */
+.promo-card {
+  border: 1px solid #e2e8f0; border-radius: 10px;
+  padding: 14px 16px; margin-bottom: 12px;
+}
+.promo-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 8px; }
+.promo-title { font-weight: 700; color: #1a237e; font-size: 0.88rem; }
+.post-box {
+  background: #f8fafc; border-radius: 8px;
+  padding: 10px 14px; margin-top: 10px;
+  font-size: 0.78rem; line-height: 1.65; color: #374151;
+  border: 1px solid #e9eef5;
+}
+.post-box strong { color: #1a237e; display: block; margin-bottom: 4px; }
+
+/* ALERT BOX */
+.alert-box {
+  border-left: 4px solid #d97706; background: #fffbeb;
+  border-radius: 0 8px 8px 0; padding: 11px 14px;
+  margin-bottom: 10px; font-size: 0.83rem;
+}
+.alert-box strong { display: block; color: #92400e; margin-bottom: 3px; }
+.alert-box span { color: #4b5563; }
+
+/* CTA BOX */
+.cta-box {
+  background: #1a237e; color: white;
+  border-radius: 10px; padding: 14px 18px;
+  font-size: 0.875rem; font-weight: 600;
+}
+
+/* STAT ROW */
+.stat-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f1f5f9; font-size: 0.85rem; }
+.stat-row:last-child { border-bottom: none; }
+.stat-row .label { color: #64748b; }
+.stat-row .value { font-weight: 700; color: #1a202c; }
+.stat-row .value.danger { color: #dc2626; }
+.stat-row .value.warn { color: #d97706; }
+
+/* HIDE/SHOW */
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+/* POSITIVE/NEGATIVE BOXES */
+.pos-box { background: #f0fdf4; border-radius: 8px; padding: 14px; }
+.neg-box { background: #fef2f2; border-radius: 8px; padding: 14px; }
+.pos-box h4 { color: #15803d; font-size: 0.83rem; margin-bottom: 8px; }
+.neg-box h4 { color: #b91c1c; font-size: 0.83rem; margin-bottom: 8px; }
+ul.list { padding-left: 14px; }
+ul.list li { font-size: 0.83rem; line-height: 2; color: #374151; }
+
+/* SCENARIO TABLE */
+.scenario-highlight { background: #fef9c3; }
+
+hr { border: none; border-top: 1px solid #e2e8f0; margin: 18px 0; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-left">
+    <h1>Co-Piloto de Gestão</h1>
+    <p>Materialão Construção — demonstração com dados fictícios</p>
+  </div>
+  <span class="demo-badge">DEMO</span>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+  <div class="tab active" onclick="showTab('diagnostico', this)">🔍 Diagnóstico</div>
+  <div class="tab" onclick="showTab('briefing', this)">📊 Briefing Semanal</div>
+  <div class="tab" onclick="showTab('mensal', this)">📋 Relatório Mensal</div>
+  <div class="tab" onclick="showTab('orcamento', this)">💰 Orçamento</div>
+  <div class="tab" onclick="showTab('promocoes', this)">📅 Promoções</div>
+</div>
+
+
+<!-- ═══════════════════════════════════════
+     TAB 1 — DIAGNÓSTICO
+════════════════════════════════════════ -->
+<div id="diagnostico" class="tab-content active">
+<div class="content">
+
+  <div class="demo-note">
+    ⚠️ <strong>Demo:</strong> dados fictícios para fins de apresentação. Após o diagnóstico real, todos os relatórios refletem os números da sua loja.
+  </div>
+
+  <div class="chat-bubble">
+    <div class="chat-avatar">GS</div>
+    <div class="chat-msg"><strong>Gestor disse:</strong> "Roda o diagnóstico com os dados do caixa — quero entender por que as vendas caíram tanto."</div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">DIAGNÓSTICO DE DADOS — Materialão Construção</div>
+    <div class="card-sub">Período analisado: Jan 2024 – Dez 2025 · 24 meses</div>
+
+    <div class="summary-box">
+      A loja perdeu <strong>41% do faturamento</strong> em 24 meses. A queda está concentrada em <strong>Pisos/Revestimentos</strong> (−48%) e <strong>Cimento/Argamassa</strong> (−31%) — indício de perda de empreiteiros e concorrência direta de redes no segmento de produtos padronizados. <strong>Tintas e Hidráulico resistiram</strong> e mantiveram margem. Há <strong>R$ 87.000 parados em estoque</strong> de pisos e cerâmicas sem giro há mais de 45 dias — capital travado que custa R$ 1.300/mês em custo de oportunidade.
+    </div>
+
+    <!-- METRICS -->
+    <div class="metrics">
+      <div class="metric">
+        <div class="metric-label">Pico (Mar 2024)</div>
+        <div class="metric-value">R$ 267k</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Atual (Dez 2025)</div>
+        <div class="metric-value">R$ 156k</div>
+        <div class="metric-change down">▼ 41,6% vs pico</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Média 2024</div>
+        <div class="metric-value">R$ 231k</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Média 2025</div>
+        <div class="metric-value">R$ 172k</div>
+        <div class="metric-change down">▼ 25,5% vs 2024</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Capital parado</div>
+        <div class="metric-value">R$ 87k</div>
+        <div class="metric-change warn">⚠️ Estoque +45 dias</div>
+      </div>
+    </div>
+
+    <!-- CHARTS ROW -->
+    <div class="grid2">
+      <div>
+        <div class="section-title">1. Faturamento — 24 meses</div>
+        <div class="chart-wrap"><canvas id="trendChart"></canvas></div>
+      </div>
+      <div>
+        <div class="section-title">2. Categorias — 2024 vs 2025</div>
+        <div class="chart-wrap"><canvas id="categoryChart"></canvas></div>
+      </div>
+    </div>
+
+    <!-- CATEGORIES TABLE -->
+    <div class="section-title">3. Análise por Categoria</div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Categoria</th><th>Fat. 2025 (méd. mensal)</th><th>Var. vs 2024</th><th>Margem est.</th><th>Status</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>Pisos/Revestimentos</strong></td><td>R$ 22.400</td><td class="down">▼ 48%</td><td>12%</td><td><span class="badge badge-red">🔴 Crítica</span></td></tr>
+          <tr><td><strong>Cimento/Argamassa</strong></td><td>R$ 38.100</td><td class="down">▼ 31%</td><td>17%</td><td><span class="badge badge-red">🔴 Crítica</span></td></tr>
+          <tr><td><strong>Ferragens</strong></td><td>R$ 24.800</td><td class="down">▼ 19%</td><td>23%</td><td><span class="badge badge-yellow">🟡 Atenção</span></td></tr>
+          <tr><td><strong>Elétrico</strong></td><td>R$ 21.200</td><td class="down">▼ 14%</td><td>22%</td><td><span class="badge badge-yellow">🟡 Atenção</span></td></tr>
+          <tr><td><strong>Tintas</strong></td><td>R$ 29.700</td><td class="down">▼ 8%</td><td>26%</td><td><span class="badge badge-green">🟢 Saudável</span></td></tr>
+          <tr><td><strong>Hidráulico</strong></td><td>R$ 21.800</td><td class="up">▲ 3%</td><td>21%</td><td><span class="badge badge-green">🟢 Saudável</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- CAUSES -->
+    <div class="section-title">4. Diagnóstico das Causas</div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Achado</th><th>Confiança nos dados</th></tr></thead>
+        <tbody>
+          <tr><td>Tintas e Hidráulico resistentes = margem e relacionamento ainda funcionam nessas categorias</td><td><span class="badge badge-green">Confirmado</span></td></tr>
+          <tr><td>Capital em pisos parados (R$ 87k) comprime caixa para reposição das categorias saudáveis</td><td><span class="badge badge-green">Confirmado</span></td></tr>
+          <tr><td>Pisos perdendo para redes (Becker, Quero-Quero) — concorrência de preço em produto padronizado</td><td><span class="badge badge-yellow">Hipótese provável</span></td></tr>
+          <tr><td>Queda em Cimento indica perda de empreiteiros de alto ticket para atacadistas</td><td><span class="badge badge-yellow">Hipótese provável</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- BREAK-EVEN -->
+    <div class="section-title">5. Ponto de Equilíbrio</div>
+    <div class="grid2">
+      <div>
+        <div class="stat-row"><span class="label">Custos fixos estimados</span><span class="value">R$ 42.000/mês</span></div>
+        <div class="stat-row"><span class="label">Margem média atual</span><span class="value">20,4%</span></div>
+        <div class="stat-row"><span class="label">Faturamento mínimo necessário</span><span class="value">R$ 205.900/mês</span></div>
+        <div class="stat-row"><span class="label">Faturamento atual</span><span class="value warn">R$ 156.000/mês</span></div>
+        <div class="stat-row"><span class="label">Déficit estimado</span><span class="value danger">▼ R$ 49.900/mês</span></div>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:center;padding:8px">
+        <div class="chart-wrap-sm" style="width:190px"><canvas id="breakEvenChart"></canvas></div>
+      </div>
+    </div>
+
+    <!-- ACTION PLAN -->
+    <div class="section-title">Plano de Ação — Top 5 Prioridades</div>
+
+    <div class="action">
+      <div class="action-num">AÇÃO 1</div>
+      <div class="action-title">Liquidar estoque parado de Pisos/Revestimentos</div>
+      <div class="action-desc">R$ 87.000 parados há 45+ dias custam R$ 1.300/mês em custo de oportunidade. Uma campanha de liquidação com 15–20% de desconto pode gerar R$ 70k em 30 dias e liberar caixa para o que vende.</div>
+      <span class="urgency urgencia-urgente">URGENTE — esta semana</span>
+    </div>
+
+    <div class="action">
+      <div class="action-num">AÇÃO 2</div>
+      <div class="action-title">Recuperar empreiteiros de alto ticket que sumiram</div>
+      <div class="action-desc">Identificar os 20 clientes que compravam R$ 10k–25k/mês e pararam nos últimos 90 dias. Um toque personalizado com condição especial pode recuperar R$ 40–80k/mês sem custo de aquisição.</div>
+      <span class="urgency urgencia-urgente">URGENTE — esta semana</span>
+    </div>
+
+    <div class="action">
+      <div class="action-num">AÇÃO 3</div>
+      <div class="action-title">Ampliar mix e condições especiais em Tintas e Hidráulico</div>
+      <div class="action-desc">São as categorias que resistiram e têm margem. Criar condição especial para pedidos acima de R$ 5k e aprofundar o mix disponível — sem comprometer resultado.</div>
+      <span class="urgency urgencia-alta">ALTA — este mês</span>
+    </div>
+
+    <div class="action">
+      <div class="action-num">AÇÃO 4</div>
+      <div class="action-title">Ativar semáforo de aprovação de orçamentos</div>
+      <div class="action-desc">Todo desconto dado sem visibilidade de margem é dinheiro que some sem ninguém perceber. Com o sistema de aprovação, nenhum vendedor fecha abaixo do piso sem o gestor saber — e sem a conta do cartão.</div>
+      <span class="urgency urgencia-alta">ALTA — este mês</span>
+    </div>
+
+    <div class="action">
+      <div class="action-num">AÇÃO 5</div>
+      <div class="action-title">Comprar Tintas e Impermeabilizantes antes do pico de inverno</div>
+      <div class="action-desc">Histórico mostra pico de demanda em Tintas de Jun–Ago (+40% vs média anual). Repor agora garante margem cheia. Quem repõe depois compra mais caro e perde a janela.</div>
+      <span class="urgency urgencia-media">MÉDIA — próximos 30 dias</span>
+    </div>
+
+  </div>
+</div>
+</div>
+
+
+<!-- ═══════════════════════════════════════
+     TAB 2 — BRIEFING SEMANAL
+════════════════════════════════════════ -->
+<div id="briefing" class="tab-content">
+<div class="content">
+
+  <div class="chat-bubble">
+    <div class="chat-avatar">GS</div>
+    <div class="chat-msg"><strong>Gestor disse:</strong> "Briefing da semana — como foi?"</div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">BRIEFING SEMANAL — Materialão Construção</div>
+    <div class="card-sub">Semana de 02/06 a 08/06/2026</div>
+
+    <div class="summary-box">
+      Semana regular, levemente abaixo da anterior. <strong>Tintas puxaram forte (+31%)</strong> — sinal de que o inverno está chegando certo. Pisos continuam parados. O orçamento do empreiteiro Carlos (R$ 18.400) está há <strong>3 dias sem resposta</strong> — risco real de fechar com a concorrência hoje ou amanhã.
+    </div>
+
+    <div class="metrics">
+      <div class="metric">
+        <div class="metric-label">Esta semana</div>
+        <div class="metric-value">R$ 38.200</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Semana anterior</div>
+        <div class="metric-value">R$ 42.100</div>
+        <div class="metric-change down">▼ 9,3%</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Meta semanal implícita</div>
+        <div class="metric-value">R$ 51.500</div>
+        <div class="metric-change warn">⚠️ 26% abaixo</div>
+      </div>
+    </div>
+
+    <div class="section-title">Destaques por Categoria</div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Categoria</th><th>Esta semana</th><th>Sem. anterior</th><th>Variação</th><th>Obs.</th></tr></thead>
+        <tbody>
+          <tr><td>Tintas</td><td>R$ 9.400</td><td>R$ 7.200</td><td class="up">▲ 31%</td><td>🌡️ Inverno chegando</td></tr>
+          <tr><td>Hidráulico</td><td>R$ 7.100</td><td>R$ 6.800</td><td class="up">▲ 4%</td><td>Estável</td></tr>
+          <tr><td>Elétrico</td><td>R$ 5.600</td><td>R$ 5.900</td><td class="down">▼ 5%</td><td>Normal</td></tr>
+          <tr><td>Cimento/Argamassa</td><td>R$ 8.200</td><td>R$ 10.400</td><td class="down">▼ 21%</td><td>⚠️ Monitorar</td></tr>
+          <tr><td>Ferragens</td><td>R$ 5.100</td><td>R$ 6.400</td><td class="down">▼ 20%</td><td>⚠️ Monitorar</td></tr>
+          <tr><td>Pisos/Revestimentos</td><td>R$ 2.800</td><td>R$ 5.400</td><td class="down">▼ 48%</td><td>🔴 Sem giro</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="section-title">⚠️ Alertas</div>
+    <div class="alert-box">
+      <strong>🕐 Orçamento em aberto — Carlos Empreiteiro</strong>
+      <span>R$ 18.400 enviado há 3 dias sem resposta. Alta probabilidade de fechar com concorrente hoje ou amanhã.</span>
+    </div>
+    <div class="alert-box">
+      <strong>📦 Pisos em queda de 48% — capital travado</strong>
+      <span>R$ 87k em estoque sem giro. A demanda não está voltando — precisa de ação ativa de liquidação.</span>
+    </div>
+
+    <div class="section-title">🎯 Recomendação da semana</div>
+    <div class="summary-box">
+      Junho é o mês das tintas — a semana já confirmou com +31%. Monte uma campanha para <strong>quinta ou sexta</strong>: "Prepare sua casa para o inverno — tintas com 10% OFF à vista". Post no Instagram + disparo na lista de clientes do WhatsApp. Com o estoque atual você tem margem para isso e o momento é agora.
+    </div>
+
+    <div class="cta-box">
+      ✅ <strong>Ação prioritária de hoje:</strong> Ligar agora para Carlos Empreiteiro sobre o orçamento de R$ 18.400 — não deixe passar mais 24h.
+    </div>
+  </div>
+</div>
+</div>
+
+
+<!-- ═══════════════════════════════════════
+     TAB 3 — RELATÓRIO MENSAL
+════════════════════════════════════════ -->
+<div id="mensal" class="tab-content">
+<div class="content">
+
+  <div class="chat-bubble">
+    <div class="chat-avatar">GS</div>
+    <div class="chat-msg"><strong>Gestor disse:</strong> "Fecha o relatório de maio pra mim."</div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">RELATÓRIO MENSAL — Maio 2026</div>
+    <div class="card-sub">Materialão Construção · Fechamento em 01/06/2026</div>
+
+    <div class="summary-box">
+      Maio foi um mês médio — <strong>abaixo da meta, mas com sinais positivos</strong>. Tintas e Hidráulico cresceram. A curva de queda desacelerou pela primeira vez em 8 meses. O ponto de equilíbrio ainda está longe, mas a direção mudou. O estoque parado continua sendo o maior risco financeiro do negócio.
+    </div>
+
+    <div class="metrics">
+      <div class="metric">
+        <div class="metric-label">Faturamento maio</div>
+        <div class="metric-value">R$ 168k</div>
+        <div class="metric-change up">▲ 3,2% vs abril</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Faturamento abril</div>
+        <div class="metric-value">R$ 163k</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Ticket médio</div>
+        <div class="metric-value">R$ 1.240</div>
+        <div class="metric-change up">▲ 4,1% vs abril</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Nº de transações</div>
+        <div class="metric-value">136</div>
+        <div class="metric-change down">▼ 1,4%</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Meta mensal</div>
+        <div class="metric-value">R$ 206k</div>
+        <div class="metric-change warn">⚠️ 18% abaixo</div>
+      </div>
+    </div>
+
+    <div class="section-title">Resultado por Categoria</div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Categoria</th><th>Fat. maio</th><th>Var. vs abril</th><th>Margem est.</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td>Cimento/Argamassa</td><td>R$ 40.800</td><td class="down">▼ 5%</td><td>17%</td><td><span class="badge badge-red">🔴 Crítica</span></td></tr>
+          <tr><td>Tintas</td><td>R$ 33.200</td><td class="up">▲ 18%</td><td>27%</td><td><span class="badge badge-green">🟢 Saudável</span></td></tr>
+          <tr><td>Pisos/Revestimentos</td><td>R$ 18.600</td><td class="down">▼ 12%</td><td>11%</td><td><span class="badge badge-red">🔴 Crítica</span></td></tr>
+          <tr><td>Hidráulico</td><td>R$ 24.100</td><td class="up">▲ 9%</td><td>22%</td><td><span class="badge badge-green">🟢 Saudável</span></td></tr>
+          <tr><td>Ferragens</td><td>R$ 26.400</td><td class="down">▼ 3%</td><td>24%</td><td><span class="badge badge-yellow">🟡 Atenção</span></td></tr>
+          <tr><td>Elétrico</td><td>R$ 25.300</td><td class="up">▲ 1%</td><td>22%</td><td><span class="badge badge-yellow">🟡 Atenção</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="grid2" style="margin-top:16px">
+      <div>
+        <div class="section-title">Ponto de Equilíbrio</div>
+        <div class="stat-row"><span class="label">Custos fixos</span><span class="value">R$ 42.000/mês</span></div>
+        <div class="stat-row"><span class="label">Margem média</span><span class="value">20,4%</span></div>
+        <div class="stat-row"><span class="label">Faturamento mínimo</span><span class="value">R$ 205.900</span></div>
+        <div class="stat-row"><span class="label">Faturamento realizado</span><span class="value warn">R$ 168.400</span></div>
+        <div class="stat-row"><span class="label">Déficit</span><span class="value danger">▼ R$ 37.500</span></div>
+      </div>
+      <div>
+        <div class="section-title">Estoque Parado</div>
+        <div class="stat-row"><span class="label">Capital parado (&gt;30 dias)</span><span class="value danger">R$ 87.000</span></div>
+        <div class="stat-row"><span class="label">Principal categoria</span><span class="value">Pisos/Cerâmicas</span></div>
+        <div class="stat-row"><span class="label">Custo oportunidade/mês</span><span class="value warn">R$ 1.305</span></div>
+        <div class="stat-row"><span class="label">Evolução vs abril</span><span class="value warn">Estável — sem melhora</span></div>
+      </div>
+    </div>
+
+    <div class="section-title">Destaques do Mês</div>
+    <div class="grid2">
+      <div class="pos-box">
+        <h4>✅ O que funcionou</h4>
+        <ul class="list">
+          <li>Tintas +18% — antecipação da demanda de inverno</li>
+          <li>Hidráulico +9% — estabilidade com boa margem</li>
+          <li>Ticket médio subiu: menos pedidos, mais valor por compra</li>
+        </ul>
+      </div>
+      <div class="neg-box">
+        <h4>❌ O que não funcionou</h4>
+        <ul class="list">
+          <li>Pisos −12% no mês, −48% no acumulado — produto que não gira</li>
+          <li>Cimento −5% — provável continuação da perda de empreiteiros</li>
+          <li>Resultado ainda 18% abaixo do ponto de equilíbrio</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="section-title">Prioridades para Junho</div>
+
+    <div class="action">
+      <div class="action-num">1 — MAIOR IMPACTO</div>
+      <div class="action-title">Campanha de tintas e impermeabilizantes para o inverno</div>
+      <div class="action-desc">O dado de maio já confirmou a tendência. Junho–agosto é o pico histórico. Criar campanha na primeira semana antes da concorrência. Meta: +35% em tintas vs. maio.</div>
+    </div>
+    <div class="action">
+      <div class="action-num">2</div>
+      <div class="action-title">Liquidar pisos parados com oferta agressiva</div>
+      <div class="action-desc">R$ 87k parados não vão girar sozinhos. Montar liquidação de fim de semana com 15–20% off — objetivo é liberar caixa, não margem.</div>
+    </div>
+    <div class="action">
+      <div class="action-num">3</div>
+      <div class="action-title">Reativar empreiteiros de alto ticket</div>
+      <div class="action-desc">Identificar quem comprava R$ 10k+ e sumiu. Uma ligação + condição especial em cimento e ferragens pode reativar R$ 30–50k em julho.</div>
+    </div>
+  </div>
+</div>
+</div>
+
+
+<!-- ═══════════════════════════════════════
+     TAB 4 — ANÁLISE DE ORÇAMENTO
+════════════════════════════════════════ -->
+<div id="orcamento" class="tab-content">
+<div class="content">
+
+  <div class="chat-bubble">
+    <div class="chat-avatar">GS</div>
+    <div class="chat-msg"><strong>Gestor disse:</strong> "Cliente quer 120 sacos de cimento a R$ 46,50, 40 litros de tinta a R$ 188 e 15 conexões PVC a R$ 22 cada. Vai parcelar em 6x no cartão. Posso fechar?"</div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">ANÁLISE DE ORÇAMENTO</div>
+    <div class="card-sub">Forma de pagamento: Crédito 6x · Taxa aplicada: 3,79%</div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Produto</th><th>Qtd</th><th>Preço unit.</th><th>Total</th><th>Custo est.</th><th>Margem bruta</th><th>Margem líquida</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Cimento 50kg</strong></td><td>120</td><td>R$ 46,50</td><td>R$ 5.580</td><td>R$ 38,13</td><td>18,0%</td><td>14,2%</td>
+          </tr>
+          <tr>
+            <td><strong>Tinta (litro)</strong></td><td>40</td><td>R$ 188,00</td><td>R$ 7.520</td><td>R$ 135,36</td><td>28,0%</td><td>24,2%</td>
+          </tr>
+          <tr>
+            <td><strong>Conexão PVC</strong></td><td>15</td><td>R$ 22,00</td><td>R$ 330</td><td>R$ 17,16</td><td>22,0%</td><td>18,2%</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div style="background:#f8fafc;border-radius:8px;padding:14px 18px;margin:14px 0;border:1px solid #e9eef5">
+      <div class="grid2">
+        <div>
+          <div class="stat-row"><span class="label">Total ofertado</span><span class="value">R$ 13.430</span></div>
+          <div class="stat-row"><span class="label">Total custo estimado</span><span class="value">R$ 10.168</span></div>
+          <div class="stat-row"><span class="label">Taxa cartão (3,79%)</span><span class="value">− R$ 509</span></div>
+        </div>
+        <div>
+          <div class="stat-row"><span class="label">Margem mínima ponderada</span><span class="value">18,4%</span></div>
+          <div class="stat-row"><span class="label">Margem líquida do orçamento</span><span class="value warn">20,6%</span></div>
+          <div class="stat-row"><span class="label">Folga acima do mínimo</span><span class="value warn">+2,2 pontos</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="semaforo semaforo-amarelo">
+      <div class="semaforo-icon">🟡</div>
+      <div>
+        <h3>AMARELO — NEGOCIE COM CUIDADO</h3>
+        <p>Margem de 20,6% está apenas 2,2pp acima do mínimo. Qualquer desconto adicional coloca o negócio no vermelho. Fechar é possível — mas sem ceder mais nada.</p>
+      </div>
+    </div>
+
+    <div class="grid2">
+      <div>
+        <div class="section-title">Desconto máximo possível</div>
+        <div class="stat-row"><span class="label">Desconto máximo sem queimar</span><span class="value">2,2% (R$ 295)</span></div>
+        <div class="stat-row"><span class="label">Preço mínimo total</span><span class="value">R$ 13.135</span></div>
+        <div class="stat-row"><span class="label">Desconto em reais</span><span class="value danger">Máx. R$ 295</span></div>
+      </div>
+      <div>
+        <div class="section-title">E se mudar a forma de pagamento?</div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Forma de pagamento</th><th>Margem</th><th></th></tr></thead>
+            <tbody>
+              <tr><td>À vista / dinheiro</td><td>24,4%</td><td><span class="badge badge-green">🟢 Verde</span></td></tr>
+              <tr><td>Débito (1,99%)</td><td>22,7%</td><td><span class="badge badge-green">🟢 Verde</span></td></tr>
+              <tr><td>Crédito 1x (2,99%)</td><td>21,6%</td><td><span class="badge badge-yellow">🟡 Amarelo</span></td></tr>
+              <tr class="scenario-highlight"><td><strong>Crédito 6x (3,79%)</strong></td><td><strong>20,6%</strong></td><td><span class="badge badge-yellow">🟡 Amarelo</span></td></tr>
+              <tr><td>Crédito 12x (4,49%)</td><td>19,9%</td><td><span class="badge badge-yellow">🟡 Amarelo</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div style="background:#fffbeb;border:1px solid #fed7aa;border-radius:8px;padding:11px 15px;margin-top:14px;font-size:0.83rem;color:#92400e">
+      💡 <strong>Sugestão:</strong> Antes de ceder no parcelamento, ofereça 3% de desconto pagando à vista ou no débito — você fecha verde e o cliente sai com desconto. Ganha dos dois lados.
+    </div>
+  </div>
+</div>
+</div>
+
+
+<!-- ═══════════════════════════════════════
+     TAB 5 — CALENDÁRIO DE PROMOÇÕES
+════════════════════════════════════════ -->
+<div id="promocoes" class="tab-content">
+<div class="content">
+
+  <div class="chat-bubble">
+    <div class="chat-avatar">GS</div>
+    <div class="chat-msg"><strong>Gestor disse:</strong> "O que promover em junho? Monta o calendário."</div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">CALENDÁRIO DE PROMOÇÕES — Junho 2026</div>
+    <div class="card-sub">Materialão Construção · Baseado em sazonalidade + estoque atual</div>
+
+    <div class="summary-box">
+      Junho é o mês das tintas e impermeabilizantes — inverno = reforma interna. O histórico mostra pico de +40% nessas categorias em jun–ago. Pisos entram como liquidação de estoque parado: o objetivo não é margem, é liberar capital para o que vende.
+    </div>
+
+    <div class="promo-card">
+      <div class="promo-header">
+        <span class="promo-title">📅 Semana 1 (02–08/jun) — Abertura do Inverno</span>
+        <span class="badge badge-yellow">🔥 Prioridade Alta</span>
+      </div>
+      <p style="font-size:0.82rem;color:#4b5563;margin-bottom:8px"><strong>Produto:</strong> Tintas Premium · 10% OFF à vista · Preço sugerido: R$ 169,20 · Margem após desconto: 24% ✅</p>
+      <p style="font-size:0.82rem;color:#64748b"><em>Motivo: sazonalidade favorável — início do inverno, pico histórico de tintas</em></p>
+      <div class="post-box">
+        <strong>📱 Post Instagram:</strong>
+        🎨 Inverno chegou — renove sua casa com tintas de qualidade!<br>
+        10% de desconto pagando à vista essa semana. 🏠✨<br>
+        #MaterialãoConstrução #Tintas #ReformaDeInverno #[Cidade]
+      </div>
+      <div class="post-box">
+        <strong>📲 Mensagem WhatsApp:</strong>
+        Oi [NOME]! Inverno chegou e as tintas tão com 10% OFF à vista essa semana aqui na Materialão. Aproveita pra dar aquela renovada! 🎨 Chama no WhatsApp ou passa aqui.
+      </div>
+    </div>
+
+    <div class="promo-card">
+      <div class="promo-header">
+        <span class="promo-title">📅 Semana 2 (09–15/jun) — Liquidação de Pisos</span>
+        <span class="badge badge-red">⚠️ Urgente (estoque parado)</span>
+      </div>
+      <p style="font-size:0.82rem;color:#4b5563;margin-bottom:8px"><strong>Produto:</strong> Pisos e Cerâmicas selecionados · até 20% OFF · Objetivo: liberar caixa</p>
+      <p style="font-size:0.82rem;color:#64748b"><em>Motivo: R$ 87.000 parados há 45+ dias — capital que precisa girar</em></p>
+      <div class="post-box">
+        <strong>📱 Post Instagram:</strong>
+        🏷️ LIQUIDAÇÃO de Pisos — até 20% OFF!<br>
+        Estoque selecionado com preços especiais. Primeiros a chegar, primeiros a levar. 📦<br>
+        #LiquidaçãoPisos #MaterialãoConstrução #Oferta #[Cidade]
+      </div>
+    </div>
+
+    <div class="promo-card">
+      <div class="promo-header">
+        <span class="promo-title">📅 Semana 3 (16–22/jun) — Impermeabilizante</span>
+        <span class="badge badge-yellow">🔥 Prioridade Alta</span>
+      </div>
+      <p style="font-size:0.82rem;color:#4b5563;margin-bottom:8px"><strong>Produto:</strong> Impermeabilizantes + Rejunte · combo especial</p>
+      <p style="font-size:0.82rem;color:#64748b"><em>Motivo: chuvas de inverno — demanda natural e previsível</em></p>
+      <div class="post-box">
+        <strong>📱 Post Instagram:</strong>
+        🌧️ Inverno em [Cidade] pede impermeabilização! Proteja sua laje agora.<br>
+        Combo impermeabilizante + rejunte com condição especial essa semana. 💪<br>
+        #Impermeabilizante #MaterialãoConstrução #[Cidade]
+      </div>
+    </div>
+
+    <div class="promo-card">
+      <div class="promo-header">
+        <span class="promo-title">📅 Semana 4 (23–30/jun) — Kit Empreiteiro</span>
+        <span class="badge badge-blue">📊 Prioridade Média</span>
+      </div>
+      <p style="font-size:0.82rem;color:#4b5563;margin-bottom:8px"><strong>Produto:</strong> Kit Hidráulico para empreiteiro · 5% OFF em pedidos acima de R$ 3k</p>
+      <p style="font-size:0.82rem;color:#64748b"><em>Motivo: fechar junho mais perto da meta + reativar empreiteiros de médio ticket</em></p>
+    </div>
+
+    <div class="section-title">🛒 Compra Antecipada — O que pedir para Julho</div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Produto</th><th>Por que comprar agora</th><th>Volume sugerido</th></tr></thead>
+        <tbody>
+          <tr><td>Tintas Premium e Econômicas</td><td>Pico histórico em julho — repor antes de faltar e pagar mais caro</td><td>+30% vs estoque atual</td></tr>
+          <tr><td>Impermeabilizante</td><td>Continuação do inverno — demanda sustentada por 2–3 meses</td><td>+20% vs estoque atual</td></tr>
+          <tr><td>Rejunte e Argamassa Cola</td><td>Complementa pisos e reformas — vende junto</td><td>Manter nível atual</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+</div>
+
+
+<!-- SCRIPTS -->
+<script>
+function showTab(name, el) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(name).classList.add('active');
+  el.classList.add('active');
+}
+
+// ── Chart 1: 24-month revenue trend ──
+const months = [
+  'Jan/24','Fev/24','Mar/24','Abr/24','Mai/24','Jun/24',
+  'Jul/24','Ago/24','Set/24','Out/24','Nov/24','Dez/24',
+  'Jan/25','Fev/25','Mar/25','Abr/25','Mai/25','Jun/25',
+  'Jul/25','Ago/25','Set/25','Out/25','Nov/25','Dez/25'
+];
+const revenue = [
+  248000,255000,267000,261000,254000,246000,
+  239000,232000,226000,218000,211000,205000,
+  195000,189000,184000,178000,172000,168000,
+  165000,163000,161000,160000,158000,156000
+];
+
+new Chart(document.getElementById('trendChart').getContext('2d'), {
+  type: 'line',
+  data: {
+    labels: months,
+    datasets: [{
+      data: revenue,
+      borderColor: '#1a237e',
+      backgroundColor: 'rgba(26,35,126,0.07)',
+      borderWidth: 2, fill: true,
+      pointRadius: 2, pointHoverRadius: 5,
+      tension: 0.35
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: { callbacks: { label: c => ' R$ ' + (c.raw/1000).toFixed(0) + 'k' } }
+    },
+    scales: {
+      y: {
+        ticks: { callback: v => 'R$' + (v/1000).toFixed(0) + 'k', font: { size: 10 } },
+        grid: { color: '#f1f5f9' }
+      },
+      x: { ticks: { font: { size: 9 }, maxRotation: 45 } }
+    }
+  }
+});
+
+// ── Chart 2: Category 2024 vs 2025 ──
+new Chart(document.getElementById('categoryChart').getContext('2d'), {
+  type: 'bar',
+  data: {
+    labels: ['Cimento', 'Tintas', 'Pisos', 'Ferragens', 'Elétrico', 'Hidráulico'],
+    datasets: [
+      {
+        label: '2024 (méd.)',
+        data: [55200, 32200, 43100, 30600, 24700, 21200],
+        backgroundColor: 'rgba(26,35,126,0.25)',
+        borderColor: '#1a237e', borderWidth: 1, borderRadius: 4
+      },
+      {
+        label: '2025 (méd.)',
+        data: [38100, 29700, 22400, 24800, 21200, 21800],
+        backgroundColor: 'rgba(220,38,38,0.25)',
+        borderColor: '#dc2626', borderWidth: 1, borderRadius: 4
+      }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { position: 'bottom', labels: { font: { size: 10 }, boxWidth: 12 } },
+      tooltip: { callbacks: { label: c => c.dataset.label + ': R$ ' + (c.raw/1000).toFixed(1) + 'k' } }
+    },
+    scales: {
+      y: { ticks: { callback: v => 'R$' + (v/1000).toFixed(0) + 'k', font: { size: 10 } }, grid: { color: '#f1f5f9' } },
+      x: { ticks: { font: { size: 10 } } }
+    }
+  }
+});
+
+// ── Chart 3: Break-even donut ──
+new Chart(document.getElementById('breakEvenChart').getContext('2d'), {
+  type: 'doughnut',
+  data: {
+    labels: ['Realizado', 'Déficit'],
+    datasets: [{
+      data: [156000, 49900],
+      backgroundColor: ['#1a237e', '#fee2e2'],
+      borderColor: ['#1a237e', '#fca5a5'],
+      borderWidth: 1
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false, cutout: '62%',
+    plugins: {
+      legend: { position: 'bottom', labels: { font: { size: 10 }, boxWidth: 10 } },
+      tooltip: { callbacks: { label: c => ' R$ ' + (c.raw/1000).toFixed(0) + 'k' } }
+    }
+  }
+});
+</script>
+</body>
+</html>
